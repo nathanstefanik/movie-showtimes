@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Movie Showtimes</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <nav class="navigation">
+    <ul>
+      <li><a href="https://nathanstefanik.xyz/"> Home </a></li>
+      <li><a href="https://nathanstefanik.xyz/cv/"> CV </a></li>
+      <li><a href="https://nathanstefanik.xyz/blog/"> Blog </a></li>
+      <li><a href="https://nathanstefanik.xyz/projects/"> Projects </a></li>
+      <li><a href="https://nathanstefanik.xyz/photos/"> Photos </a></li>
+      <li><a href="/"> Showtimes </a></li>
+    </ul>
+  </nav>
+
+  <div class="page">
+    <header class="header">
+      <div class="header__main">
+        <h1><a href="/">Movie Showtimes</a></h1>
+      </div>
+      <div class="header__actions">
+        <p id="refreshed-at" class="refreshed">No cached data — click Refresh</p>
+        <button id="refresh-btn" type="button" class="btn">Refresh</button>
+      </div>
+    </header>
+
+    <p id="tmdb-banner" class="banner hidden">TMDB_API_KEY is not set — day view posters and descriptions will not appear.</p>
+
+    <section class="card card--theaters" id="theaters-section">
+      <button type="button" id="theaters-toggle" class="theaters-bar" aria-expanded="false" aria-controls="theaters-panel">
+        <span id="theaters-summary" class="theaters-bar__summary">Theaters</span>
+        <span class="theaters-bar__chevron" aria-hidden="true">▾</span>
+      </button>
+      <div id="theaters-panel" class="theaters-panel hidden">
+        <ul id="theater-list" class="theater-list"></ul>
+        <form id="add-theater-form" class="theater-form">
+          <input type="text" id="theater-name" placeholder="Name" required>
+          <input type="url" id="theater-url" placeholder="https://..." required>
+          <button type="submit" class="btn">Add theater</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="schedule-head">
+        <h2>Schedule</h2>
+        <div class="week-nav">
+          <button id="week-prev" type="button" class="btn btn--icon" aria-label="Previous week">←</button>
+          <span id="week-label" class="week-label">This week</span>
+          <button id="week-next" type="button" class="btn btn--icon" aria-label="Next week">→</button>
+          <a id="week-view-link" href="/" class="btn week-view-link hidden">Week view</a>
+          <button id="today-jump" type="button" class="btn today-jump hidden">Today</button>
+        </div>
+      </div>
+      <div id="grid-wrap" class="grid-wrap">
+        <div id="week-grid" class="week-grid"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>
+        Film title colors come from your Letterboxd export in
+        <code>data/movies/</code> (watchlist = blue, watched = grey,
+        4★+ = green, 2★ or less = red).
+        Day view posters and descriptions need <code>TMDB_API_KEY</code>.
+      </p>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

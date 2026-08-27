@@ -1,0 +1,16 @@
+[Unit]
+Description=Movie Showtimes
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=moviedash
+Group=moviedash
+WorkingDirectory=/opt/movie-showtimes
+ExecStart=/opt/movie-showtimes/movie-showtimes
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

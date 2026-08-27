@@ -1,0 +1,8 @@
+[
+  {"id": "metrograph", "name": "Metrograph", "url": "https://metrograph.com", "parser": "metrograph"},
+  {"id": "filmlinc", "name": "Film at Lincoln Center", "url": "https://filmlinc.org", "parser": "filmlinc"},
+  {"id": "roxy", "name": "Roxy Cinema", "url": "https://roxycinemanewyork.com", "parser": "roxy"},
+  {"id": "filmforum", "name": "Film Forum", "url": "https://filmforum.org", "parser": "filmforum"},
+  {"id": "anthology", "name": "Anthology Film Archives", "url": "https://www.anthologyfilmarchives.org", "parser": "anthology"},
+  {"id": "bam", "name": "BAMcinématek", "url": "https://www.bam.org", "parser": "bam"}
+]

@@ -1,0 +1,614 @@
+.page, .page * { box-sizing: border-box; }
+
+body {
+  padding-bottom: 40px;
+  padding-left: 40px;
+  padding-right: 40px;
+}
+
+.page {
+  max-width: none;
+  line-height: 1.5;
+}
+
+.navigation {
+  overflow: hidden;
+  top: 0px;
+}
+
+.navigation ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navigation li {
+  float: left;
+  font-size: 18px;
+}
+
+.navigation a {
+  display: block;
+  padding-bottom: 15px;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 15px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.navigation li a:hover {
+  text-decoration: underline;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px 20px;
+  margin-bottom: 40px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.header h1 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.header__actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.refreshed {
+  margin: 0;
+  opacity: 0.55;
+  font-size: 0.875rem;
+}
+
+.banner {
+  margin: -20px 0 24px;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.hidden { display: none !important; }
+
+.card {
+  margin-bottom: 40px;
+}
+
+.card--theaters {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.card--theaters--expanded {
+  margin-bottom: 40px;
+}
+
+.card--theaters:not(.card--theaters--expanded) {
+  margin-bottom: 20px;
+}
+
+.card h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.theaters-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.2;
+  text-align: left;
+  color: inherit;
+}
+
+.theaters-bar:hover .theaters-bar__summary {
+  text-decoration: underline;
+}
+
+.theaters-bar__summary {
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.65;
+}
+
+.theaters-bar__chevron {
+  font-size: 0.75rem;
+  opacity: 0.45;
+  transition: transform 0.15s ease;
+}
+
+.card--theaters--expanded .theaters-bar__chevron {
+  transform: rotate(180deg);
+}
+
+.theaters-panel {
+  margin-top: 0.75rem;
+}
+
+/* Schedule grid typography — edit font-size on these classes to tune the grid:
+   .week-label                         week range in nav
+   .day-col__head                      column day headers
+   .film-card__title                   film titles (week + day views)
+   .chip                               week-view showtime rows (time · theater)
+   .chip--time                         day-view showtime chips
+   .day-showtimes-group__theater       theater names in day view
+   .empty-day                          empty grid / day cells
+   .film-card__director / __year / __overview   day-view film meta
+*/
+
+.schedule-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 0.5rem;
+}
+
+.schedule-head h2 {
+  margin: 0;
+}
+
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.week-label {
+  min-width: 9rem;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+a, .btn {
+  color: link;
+}
+
+a:visited, .btn:visited {
+  color: visited;
+}
+
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.btn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+}
+
+.btn--icon:disabled {
+  opacity: 0.4;
+}
+
+.btn--icon {
+  padding: 0 4px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.theater-list {
+  list-style: none;
+  margin: 0 0 15px;
+  padding: 0;
+}
+
+.theater-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 0;
+  line-height: 1.2;
+}
+
+.theater-row + .theater-row {
+  margin-top: 15px;
+}
+
+.theater-row--hidden {
+  opacity: 0.45;
+}
+
+.theater-name { font-weight: 500; }
+
+.theater-url {
+  opacity: 0.55;
+  font-size: 0.875rem;
+  max-width: 22rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  font-size: 0.7rem;
+  font-weight: 500;
+  opacity: 0.55;
+  white-space: nowrap;
+}
+
+.theater-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 0;
+}
+
+.theater-form input {
+  flex: 0 0 auto;
+  padding: 0.25rem 0;
+  font: inherit;
+}
+
+.theater-form input#theater-name {
+  width: 10rem;
+}
+
+.theater-form input#theater-url {
+  width: 22rem;
+}
+
+.grid-wrap {
+  overflow-x: auto;
+  margin-top: 15px;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.day-col {
+  min-height: 8rem;
+}
+
+.day-col__head {
+  padding: 0 0 0.5rem;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
+.day-link {
+  font-weight: 500;
+  color: inherit;
+}
+
+.day-col--today .day-col__head {
+  font-weight: 600;
+}
+
+.day-col--today .day-col__head::after {
+  content: " · Today";
+  font-weight: 500;
+  opacity: 0.5;
+}
+
+.week-grid--day {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.day-col--solo .day-col__body {
+  padding-top: 0.25rem;
+}
+
+.film-card--day {
+  margin-bottom: 2rem;
+  scroll-margin-top: 1rem;
+}
+
+.film-card--day .film-card__meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.film-card__poster {
+  flex-shrink: 0;
+  width: 92px;
+  height: auto;
+  border-radius: 2px;
+}
+
+.film-card__director {
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-bottom: 0.15rem;
+}
+
+.film-card__year {
+  font-size: 0.6875rem;
+  opacity: 0.65;
+  margin-bottom: 0.35rem;
+}
+
+.film-card__overview {
+  margin: 0;
+  font-size: 0.75rem;
+  opacity: 0.75;
+  line-height: 1.45;
+}
+
+.day-showtimes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.day-showtimes-group__theater a,
+.chip a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.day-showtimes-group__theater a:hover,
+.chip a:hover {
+  text-decoration: underline;
+}
+
+.day-showtimes-group__theater {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+}
+
+.day-showtimes-group__times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+}
+
+.chip--time {
+  font-size: 0.75rem;
+}
+
+.day-col__body {
+  padding: 0;
+}
+
+.empty-day {
+  opacity: 0.45;
+  text-align: center;
+  padding: 1.5rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.film-card {
+  margin-bottom: 28px;
+}
+
+.film-card:last-child { margin-bottom: 0; }
+
+.film-card__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.film-card__title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.film-card__title a:hover {
+  text-decoration: underline;
+}
+
+.film-card__title--watchlist { color: #2563eb; }
+.film-card__title--watched { color: #9ca3af; }
+.film-card__title--loved { color: #16a34a; }
+.film-card__title--disliked { color: #dc2626; }
+
+.chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.chip {
+  font-size: 0.72rem;
+  opacity: 0.75;
+}
+
+.footer {
+  margin-top: 40px;
+  opacity: 0.55;
+  font-size: 0.8125rem;
+}
+
+.footer p {
+  margin: 0;
+  max-width: 42rem;
+}
+
+@media (max-width: 900px) and (min-width: 641px) {
+  .week-grid {
+    grid-template-columns: repeat(7, minmax(7.5rem, 1fr));
+    min-width: 52.5rem;
+  }
+
+  .week-grid--day {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .header h1 {
+    font-size: 1.35rem;
+  }
+
+  .header__actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .banner {
+    margin-top: 0;
+  }
+
+  .card {
+    margin-bottom: 28px;
+  }
+
+  .card--theaters {
+    width: 100%;
+  }
+
+  .card--theaters--expanded {
+    margin-bottom: 28px;
+  }
+
+  .card--theaters:not(.card--theaters--expanded) {
+    margin-bottom: 16px;
+  }
+
+  .theaters-bar {
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .theater-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px 12px;
+  }
+
+  .theater-url {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .theater-row .btn {
+    min-height: 44px;
+    padding: 8px 4px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .theater-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .theater-form input#theater-name,
+  .theater-form input#theater-url {
+    width: 100%;
+  }
+
+  .theater-form .btn,
+  #refresh-btn {
+    align-self: flex-start;
+    min-height: 44px;
+    padding: 10px 4px;
+  }
+
+  .schedule-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .week-nav {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .btn--icon {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  .week-label {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .grid-wrap {
+    overflow-x: visible;
+  }
+
+  .week-grid {
+    grid-template-columns: 1fr;
+    min-width: 0;
+    gap: 20px;
+  }
+
+  .day-col:not(.day-col--solo) {
+    min-height: 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .day-col:not(.day-col--solo):last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .film-card--day .film-card__meta {
+    flex-direction: column;
+  }
+
+  .film-card__poster {
+    width: 72px;
+  }
+
+  .footer {
+    margin-top: 28px;
+  }
+}

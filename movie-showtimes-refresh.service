@@ -1,0 +1,16 @@
+[Unit]
+Description=Refresh Movie Showtimes data
+After=movie-showtimes.service
+Requires=movie-showtimes.service
+
+[Service]
+Type=oneshot
+User=moviedash
+Group=moviedash
+# ADMIN_TOKEN comes from the app's own .env so the secret lives in exactly one
+# place. Not optional (`-`): a missing file should fail loudly, not silently
+# POST an empty token and get a 401 at 06:00.
+EnvironmentFile=/opt/movie-showtimes/.env
+# The scrape can take up to 10 minutes server-side; keep curl connected past that
+# so the request context isn't cancelled mid-refresh.
+ExecStart=/usr/bin/curl -sf --max-time 660 -X POST -H "X-Admin-Token: ${ADMIN_TOKEN}" -o /dev/null http://localhost:8080/api/refresh

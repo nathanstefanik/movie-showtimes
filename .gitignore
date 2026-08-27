@@ -1,0 +1,48 @@
+# --- Secrets -----------------------------------------------------------
+# ADMIN_TOKEN / TMDB_API_KEY / OMDB_API_KEY live here. Never commit this.
+.env
+.env.*
+!.env.example
+
+# --- Personal / local-only --------------------------------------------
+# Homelab deploy script (hostnames, SSH, Proxmox). Not part of the app.
+deploy.sh
+
+# --- Personal data --------------------------------------------------------
+# Letterboxd exports are a user's private watch/rating history, not app code.
+# See data/movies/README.md for how to add your own.
+data/movies/*.csv
+
+# --- Generated caches -------------------------------------------------
+# Rebuilt by the app at runtime (scraper output, TMDB lookups, legacy IMDb
+# cache); committing them just churns the diff and can leak scrape history.
+data/showtimes.json
+data/tmdb.json
+data/ratings.json
+
+# --- Build artifacts -----------------------------------------------------
+/movie-showtimes
+/movie-showtimes-linux
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+__debug_bin*
+
+# --- Go tooling -----------------------------------------------------------
+/vendor/
+go.work
+go.work.sum
+
+# --- Editors / OS -----------------------------------------------------
+.DS_Store
+.idea/
+.vscode/
+.cursor/
+*.swp
+
+# --- Misc local envs -------------------------------------------------
+.venv/
