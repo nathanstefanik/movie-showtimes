@@ -323,7 +323,7 @@ func (s *Server) handleTheaters(w http.ResponseWriter, r *http.Request) {
 			ID:     config.Slugify(req.Name, theaters),
 			Name:   req.Name,
 			URL:    req.URL,
-			Parser: "",
+			Parser: scraper.InferParser(req.URL),
 		}
 		theaters = append(theaters, th)
 		if err := config.SaveTheaters(theaters); err != nil {
@@ -450,7 +450,7 @@ func buildPayload(shows *model.ShowtimeCache, theaters []model.Theater, tmdbMap 
 	for _, th := range theaters {
 		known[th.ID] = struct{}{}
 		st := model.TheaterStatus{Theater: th}
-		if th.Parser == "" {
+		if scraper.ResolveParser(th) == "" {
 			st.Status = "no_parser"
 		} else if msg, ok := errors[th.ID]; ok && msg != "" {
 			st.Status = "error"

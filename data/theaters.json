@@ -4,5 +4,6 @@
   {"id": "roxy", "name": "Roxy Cinema", "url": "https://roxycinemanewyork.com", "parser": "roxy"},
   {"id": "filmforum", "name": "Film Forum", "url": "https://filmforum.org", "parser": "filmforum"},
   {"id": "anthology", "name": "Anthology Film Archives", "url": "https://www.anthologyfilmarchives.org", "parser": "anthology"},
-  {"id": "bam", "name": "BAMcinématek", "url": "https://www.bam.org", "parser": "bam"}
+  {"id": "bam", "name": "BAMcinématek", "url": "https://www.bam.org", "parser": "bam"},
+  {"id": "paris", "name": "Paris Theater", "url": "https://www.paristheaternyc.com/", "parser": "paris"}
 ]

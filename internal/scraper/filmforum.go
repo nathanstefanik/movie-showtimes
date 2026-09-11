@@ -33,16 +33,52 @@ func (FilmForumParser) Fetch(ctx context.Context, client *http.Client, theater m
 	return out, nil
 }
 
-// filmForumWeekStart is the date of tabs-0. Film Forum used to anchor the tab
-// strip to the Friday that opened the week; it now runs a rolling seven days
-// starting today (the tab labels read TUE WED THU… from the current weekday).
-func filmForumWeekStart() time.Time {
+var ffTabDayCommentRe = regexp.MustCompile(`<!--\s*(\d{1,2})\s*-->`)
+
+// filmForumWeekStart is the date of tabs-0. Each tab embeds the day-of-month in
+// an HTML comment (`<!-- 11 -->`); prefer that over assuming a Friday week or a
+// rolling "today" start, both of which Film Forum has used at different times.
+func filmForumWeekStart(doc *goquery.Document) time.Time {
 	now := time.Now().In(NYC())
-	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, NYC())
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, NYC())
+	if day := filmForumTabDay(doc, 0); day > 0 {
+		cand := time.Date(now.Year(), now.Month(), day, 0, 0, 0, 0, NYC())
+		if cand.Day() != day {
+			// day-of-month overflow (e.g. Feb 31) — fall back to today
+			return today
+		}
+		if cand.Before(today.AddDate(0, 0, -1)) {
+			cand = cand.AddDate(0, 1, 0)
+		} else if cand.After(today.AddDate(0, 0, 7)) {
+			cand = cand.AddDate(0, -1, 0)
+		}
+		return cand
+	}
+	return today
+}
+
+func filmForumTabDay(doc *goquery.Document, idx int) int {
+	tab := doc.Find(fmt.Sprintf(`div#tabs-%d`, idx)).First()
+	if tab.Length() == 0 {
+		return 0
+	}
+	html, err := tab.Html()
+	if err != nil {
+		return 0
+	}
+	m := ffTabDayCommentRe.FindStringSubmatch(html)
+	if m == nil {
+		return 0
+	}
+	day, err := strconv.Atoi(m[1])
+	if err != nil || day < 1 || day > 31 {
+		return 0
+	}
+	return day
 }
 
 func parseFilmForumShowtimes(doc *goquery.Document, theater model.Theater, filmURLs map[string]string) []model.Showtime {
-	weekStart := filmForumWeekStart()
+	weekStart := filmForumWeekStart(doc)
 	var out []model.Showtime
 	doc.Find(`div[id^="tabs-"]`).Each(func(_ int, tab *goquery.Selection) {
 		id, ok := tab.Attr("id")

@@ -26,11 +26,44 @@ var registry = map[string]Parser{
 	"filmforum":  &FilmForumParser{},
 	"anthology":  &AnthologyParser{},
 	"bam":        &BAMParser{},
+	"paris":      &ParisParser{},
+}
+
+// parserByHost maps theater website hosts (no www.) to registry keys. Used when
+// a theater was added via the UI without a parser field.
+var parserByHost = map[string]string{
+	"metrograph.com":            "metrograph",
+	"filmlinc.org":              "filmlinc",
+	"roxycinemanewyork.com":     "roxy",
+	"filmforum.org":             "filmforum",
+	"anthologyfilmarchives.org": "anthology",
+	"bam.org":                   "bam",
+	"paristheaternyc.com":       "paris",
 }
 
 func Get(name string) (Parser, bool) {
 	p, ok := registry[name]
 	return p, ok
+}
+
+func InferParser(theaterURL string) string {
+	u, err := url.Parse(theaterURL)
+	if err != nil {
+		return ""
+	}
+	host := strings.ToLower(u.Hostname())
+	host = strings.TrimPrefix(host, "www.")
+	if host == "" {
+		return ""
+	}
+	return parserByHost[host]
+}
+
+func ResolveParser(th model.Theater) string {
+	if th.Parser != "" {
+		return th.Parser
+	}
+	return InferParser(th.URL)
 }
 
 func FetchAll(ctx context.Context, client *http.Client, theaters []model.Theater) ([]model.Showtime, map[string]string) {
@@ -49,13 +82,14 @@ func FetchAll(ctx context.Context, client *http.Client, theaters []model.Theater
 			ctxT, cancel := context.WithTimeout(ctx, TheaterFetchTimeout)
 			defer cancel()
 
-			if th.Parser == "" {
+			parserName := ResolveParser(th)
+			if parserName == "" {
 				mu.Lock()
 				errors[th.ID] = "no parser configured"
 				mu.Unlock()
 				return
 			}
-			p, ok := Get(th.Parser)
+			p, ok := Get(parserName)
 			if !ok {
 				mu.Lock()
 				errors[th.ID] = "no parser configured"
