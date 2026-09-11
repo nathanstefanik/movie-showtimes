@@ -12,27 +12,30 @@ body {
 }
 
 .navigation {
-  overflow: hidden;
-  top: 0px;
+  margin: 0 0 0.25rem;
 }
 
 .navigation ul {
   list-style-type: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
 }
 
 .navigation li {
-  float: left;
-  font-size: 18px;
+  font-size: 1.25rem;
+  line-height: 1.2;
 }
 
 .navigation a {
-  display: block;
-  padding-bottom: 15px;
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 2.75rem;
+  padding: 0.85rem 1.15rem;
   text-align: center;
   text-decoration: none;
 }
@@ -477,8 +480,22 @@ a:hover {
 @media (max-width: 640px) {
   body {
     padding-bottom: max(16px, env(safe-area-inset-bottom));
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  .navigation {
+    margin-left: calc(-1 * max(12px, env(safe-area-inset-left)));
+    margin-right: calc(-1 * max(12px, env(safe-area-inset-right)));
+  }
+
+  .navigation li {
+    font-size: 1.2rem;
+  }
+
+  .navigation a {
+    min-height: 2.75rem;
+    padding: 0.9rem 0.85rem;
   }
 
   .header {
