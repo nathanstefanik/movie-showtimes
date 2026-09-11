@@ -7,7 +7,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"movie-showtimes/internal/model"
@@ -23,7 +25,12 @@ const (
 	parisClientID = "webhost-browsing-parisnyc"
 	parisUsername = "webhost-browsing-parisnyc"
 	parisPassword = "HzaJe65EAPNto7sR5"
+	parisSiteURL  = "https://www.paristheaternyc.com"
+	parisCMSURL   = "https://cms.ntflxthtrs.com/api/films"
 )
+
+// Strapi film entries are embedded in the Next.js homepage payload.
+var parisFilmSlugRe = regexp.MustCompile(`FilmName\\":\\"([^\\]+)\\".*?Slug\\":\\"([^\\]+)\\".*?VistaIDOverride\\":\\"(HO[0-9]+)\\"`)
 
 type parisLocalizedText struct {
 	Text string `json:"text"`
@@ -70,23 +77,154 @@ type parisDayPayload struct {
 }
 
 func (ParisParser) Fetch(ctx context.Context, client *http.Client, theater model.Theater) ([]model.Showtime, error) {
-	token, err := parisAccessToken(ctx, client)
+	var (
+		token  string
+		slugs  map[string]string
+		authErr error
+	)
+	var setup sync.WaitGroup
+	setup.Add(2)
+	go func() {
+		defer setup.Done()
+		token, authErr = parisAccessToken(ctx, client)
+	}()
+	go func() {
+		defer setup.Done()
+		slugs = parisFilmSlugMap(ctx, client)
+	}()
+	setup.Wait()
+	if authErr != nil {
+		return nil, authErr
+	}
+	if slugs == nil {
+		slugs = map[string]string{}
+	}
+
+	dates := WeekGridDates()
+	var (
+		mu  sync.Mutex
+		out []model.Showtime
+	)
+	var wg sync.WaitGroup
+	for _, day := range dates {
+		wg.Add(1)
+		go func(day time.Time) {
+			defer wg.Done()
+			dayShows, err := parisShowtimesForDate(ctx, client, token, day, theater, slugs)
+			if err != nil {
+				return
+			}
+			mu.Lock()
+			out = append(out, dayShows...)
+			mu.Unlock()
+		}(day)
+	}
+	wg.Wait()
+
+	out = dedupeShowtimes(out)
+	if len(out) > 0 {
+		return out, nil
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("Paris Theater API: %w", err)
+	}
+	return nil, fmt.Errorf("no showtimes from Paris Theater API")
+}
+
+func parisFilmSlugMap(ctx context.Context, client *http.Client) map[string]string {
+	slugs, err := parisFilmSlugs(ctx, client)
+	if err == nil && len(slugs) > 0 {
+		return slugs
+	}
+	slugs, err = parisCMSFilmSlugs(ctx, client)
+	if err != nil {
+		return map[string]string{}
+	}
+	return slugs
+}
+
+func parisFilmSlugs(ctx context.Context, client *http.Client) (map[string]string, error) {
+	doc, err := FetchDoc(ctx, client, parisSiteURL+"/")
 	if err != nil {
 		return nil, err
 	}
-	start, end := Window()
-	var out []model.Showtime
-	for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
-		dayShows, err := parisShowtimesForDate(ctx, client, token, d, theater)
+	return parseParisFilmSlugs(doc.Text()), nil
+}
+
+func parseParisFilmSlugs(html string) map[string]string {
+	out := map[string]string{}
+	for _, m := range parisFilmSlugRe.FindAllStringSubmatch(html, -1) {
+		out[m[3]] = m[2]
+	}
+	return out
+}
+
+type parisCMSFilm struct {
+	Attributes struct {
+		Slug            string `json:"Slug"`
+		VistaID         string `json:"VistaID"`
+		VistaIDOverride string `json:"VistaIDOverride"`
+	} `json:"attributes"`
+}
+
+type parisCMSFilmsResponse struct {
+	Data []parisCMSFilm `json:"data"`
+	Meta struct {
+		Pagination struct {
+			Page      int `json:"page"`
+			PageCount int `json:"pageCount"`
+		} `json:"pagination"`
+	} `json:"meta"`
+}
+
+func parisCMSFilmSlugs(ctx context.Context, client *http.Client) (map[string]string, error) {
+	out := map[string]string{}
+	for page := 1; ; page++ {
+		q := url.Values{}
+		q.Set("pagination[page]", fmt.Sprintf("%d", page))
+		q.Set("pagination[pageSize]", "100")
+		q.Set("filters[Association][$contains]", "Paris")
+		q.Set("fields[0]", "Slug")
+		q.Set("fields[1]", "VistaID")
+		q.Set("fields[2]", "VistaIDOverride")
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, parisCMSURL+"?"+q.Encode(), nil)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, dayShows...)
+		req.Header.Set("User-Agent", userAgent)
+		req.Header.Set("Accept", "application/json")
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		body, err := func() ([]byte, error) {
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				return nil, fmt.Errorf("HTTP %d from Paris CMS", resp.StatusCode)
+			}
+			return io.ReadAll(resp.Body)
+		}()
+		if err != nil {
+			return nil, err
+		}
+		var payload parisCMSFilmsResponse
+		if err := json.Unmarshal(body, &payload); err != nil {
+			return nil, err
+		}
+		for _, film := range payload.Data {
+			vistaID := film.Attributes.VistaIDOverride
+			if vistaID == "" {
+				vistaID = film.Attributes.VistaID
+			}
+			if vistaID != "" && film.Attributes.Slug != "" {
+				out[vistaID] = film.Attributes.Slug
+			}
+		}
+		if page >= payload.Meta.Pagination.PageCount {
+			break
+		}
 	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("no showtimes from Paris Theater API")
-	}
-	return dedupeShowtimes(out), nil
+	return out, nil
 }
 
 func parisAccessToken(ctx context.Context, client *http.Client) (string, error) {
@@ -125,7 +263,7 @@ func parisAccessToken(ctx context.Context, client *http.Client) (string, error) 
 	return payload.AccessToken, nil
 }
 
-func parisShowtimesForDate(ctx context.Context, client *http.Client, token string, day time.Time, theater model.Theater) ([]model.Showtime, error) {
+func parisShowtimesForDate(ctx context.Context, client *http.Client, token string, day time.Time, theater model.Theater, slugs map[string]string) ([]model.Showtime, error) {
 	dateStr := day.Format("2006-01-02")
 	apiURL := fmt.Sprintf("%s/showtimes/by-business-date/%s?siteIds=%s", parisAPIBase, dateStr, parisSiteID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
@@ -151,10 +289,10 @@ func parisShowtimesForDate(ctx context.Context, client *http.Client, token strin
 	if err := json.Unmarshal(body, &payload); err != nil {
 		return nil, err
 	}
-	return parseParisDay(payload, theater), nil
+	return parseParisDay(payload, theater, slugs), nil
 }
 
-func parseParisDay(payload parisDayPayload, theater model.Theater) []model.Showtime {
+func parseParisDay(payload parisDayPayload, theater model.Theater, slugs map[string]string) []model.Showtime {
 	films := map[string]parisFilm{}
 	for _, f := range payload.RelatedData.Films {
 		films[f.ID] = f
@@ -201,6 +339,10 @@ func parseParisDay(payload parisDayPayload, theater model.Theater) []model.Showt
 		if len(overview) > 500 {
 			overview = overview[:500]
 		}
+		filmURL := ""
+		if slug := slugs[st.FilmID]; slug != "" {
+			filmURL = AbsoluteURL("/film/"+slug, parisSiteURL)
+		}
 		out = append(out, model.Showtime{
 			TheaterID:   theater.ID,
 			TheaterName: theater.Name,
@@ -208,7 +350,7 @@ func parseParisDay(payload parisDayPayload, theater model.Theater) []model.Showt
 			Director:    director,
 			Year:        year,
 			Overview:    overview,
-			FilmURL:     AbsoluteURL("/order/showtimes/"+st.ID+"/seats", "https://tickets.paristheaternyc.com"),
+			FilmURL:     filmURL,
 			Date:        dateStr,
 			Time:        t.Format("15:04"),
 		})
