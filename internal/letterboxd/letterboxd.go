@@ -166,6 +166,11 @@ func (l *Library) reloadIfStale() error {
 		info, err := os.Stat(filepath.Join(l.dir, name))
 		if err != nil {
 			if os.IsNotExist(err) {
+				// An export that was loaded before is gone: reload so its
+				// entries stop being reported.
+				if _, tracked := l.mtimes[name]; tracked {
+					stale = true
+				}
 				continue
 			}
 			return err

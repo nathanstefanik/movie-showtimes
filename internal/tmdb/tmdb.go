@@ -63,12 +63,7 @@ func (s *Service) RefreshForShows(shows []model.Showtime) error {
 		}
 		meta, err := searchMovie(client, s.APIKey, scraper.LookupTitle(film.Title), film.Year, film.Director)
 		if err == nil {
-			entry.FetchedAt = now
-			entry.PosterURL = meta.PosterURL
-			entry.Overview = meta.Overview
-			entry.Director = meta.Director
-			entry.ReleaseYear = meta.ReleaseYear
-			tc.Entries[key] = entry
+			tc.Entries[key] = mergeTMDBEntry(entry, meta, now)
 		}
 	}
 	if err := cache.SaveTMDB(tc); err != nil {
@@ -111,6 +106,27 @@ func (s *Service) LookupAll() (map[string]model.FilmTMDB, error) {
 	s.lookup = out
 	s.lookupStat = stamp
 	return out, nil
+}
+
+// mergeTMDBEntry folds freshly fetched metadata into the cached entry without
+// clearing fields TMDB omitted. A result can arrive with an overview but no
+// director when the details call fails, and overwriting on empty threw away
+// good cached values.
+func mergeTMDBEntry(entry model.TMDBEntry, meta *movieMeta, fetchedAt time.Time) model.TMDBEntry {
+	entry.FetchedAt = fetchedAt
+	if meta.PosterURL != "" {
+		entry.PosterURL = meta.PosterURL
+	}
+	if meta.Overview != "" {
+		entry.Overview = meta.Overview
+	}
+	if meta.Director != "" {
+		entry.Director = meta.Director
+	}
+	if meta.ReleaseYear != "" {
+		entry.ReleaseYear = meta.ReleaseYear
+	}
+	return entry
 }
 
 func FilmTMDBForTitle(meta map[string]model.FilmTMDB, title string) model.FilmTMDB {
