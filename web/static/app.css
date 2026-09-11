@@ -1,6 +1,7 @@
 .page, .page * { box-sizing: border-box; }
 
 body {
+  margin: 0;
   padding-bottom: 40px;
   padding-left: 40px;
   padding-right: 40px;
@@ -186,12 +187,16 @@ body {
   font-size: 0.9rem;
 }
 
-a, .btn {
-  color: link;
+a {
+  color: LinkText;
 }
 
-a:visited, .btn:visited {
-  color: visited;
+a:visited {
+  color: VisitedText;
+}
+
+.btn {
+  color: inherit;
 }
 
 a {
