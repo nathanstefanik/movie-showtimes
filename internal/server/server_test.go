@@ -2,6 +2,7 @@ package server
 
 import (
 	"compress/gzip"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -175,6 +176,62 @@ func TestBuildPayloadDropsShowtimesFromDeletedTheaters(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestRefreshParisLive(t *testing.T) {
+	if os.Getenv("PARIS_LIVE") != "1" {
+		t.Skip("set PARIS_LIVE=1")
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := filepath.Join(wd, "..", "..")
+	t.Setenv("ADMIN_TOKEN", "secret")
+	srv := newTestServer(t)
+	theatersSrc := filepath.Join(root, "data", "theaters.json")
+	theatersDst := filepath.Join("data", "theaters.json")
+	if err := copyFile(theatersSrc, theatersDst); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/refresh", nil)
+	req.Header.Set("X-Admin-Token", "secret")
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("refresh status %d: %s", rec.Code, rec.Body.String())
+	}
+	var payload model.APIPayload
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatal(err)
+	}
+	for _, st := range payload.TheaterStatus {
+		if st.Theater.ID != "paris" {
+			continue
+		}
+		if st.Status != "ok" {
+			t.Fatalf("paris status %q: %s", st.Status, st.Error)
+		}
+	}
+	n := 0
+	for _, s := range payload.Showtimes {
+		if s.TheaterID == "paris" {
+			n++
+		}
+	}
+	if n == 0 {
+		t.Fatal("no paris showtimes in refresh payload")
+	}
+	t.Logf("paris showtimes: %d", n)
+}
+
+func copyFile(src, dst string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, 0o644)
 }
 
 func TestBuildGridGroupsAndSorts(t *testing.T) {
