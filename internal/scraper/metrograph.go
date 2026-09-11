@@ -23,10 +23,50 @@ func (MetrographParser) Fetch(ctx context.Context, client *http.Client, theater 
 	shows := parseMetrographCalendar(doc, theater, filmURLs)
 	if len(shows) > 0 {
 		ApplyFilmURLs(shows, filmURLs)
-		EnrichFilmMetaFromURLs(ctx, client, shows, filmURLs, ParseMetrographFilmMeta)
+		// Calendar cards carry director/year, so only fall back to film pages
+		// for the rare card that lacks them. Fetching every film page on each
+		// refresh trips metrograph.com's rate limit and the tail of the run
+		// comes back 429 with no metadata.
+		EnrichFilmMetaFromURLs(ctx, client, shows, metrographMissingMetaURLs(shows, filmURLs), ParseMetrographFilmMeta)
 		return shows, nil
 	}
 	return fetchMetrographFilmPages(ctx, client, doc, theater)
+}
+
+// metrographMissingMetaURLs narrows the film-page fallback to titles whose
+// card did not supply both a director and a year.
+func metrographMissingMetaURLs(shows []model.Showtime, filmURLs map[string]string) map[string]string {
+	needMeta := map[string]bool{}
+	for _, s := range shows {
+		if s.Director == "" || s.Year == "" {
+			needMeta[NormalizeTitle(s.Title)] = true
+		}
+	}
+	out := map[string]string{}
+	for key, filmURL := range filmURLs {
+		if needMeta[key] {
+			out[key] = filmURL
+		}
+	}
+	return out
+}
+
+// parseMetrographCardMeta reads the "Director / Year / runtime / format" line
+// on a calendar card, e.g. "Tsui Hark / 1984 / 103min / 4K DCP".
+func parseMetrographCardMeta(item *goquery.Selection) FilmMeta {
+	raw := strings.TrimSpace(item.Find("div.film-metadata").First().Text())
+	if raw == "" {
+		return FilmMeta{}
+	}
+	parts := strings.Split(raw, "/")
+	var meta FilmMeta
+	meta.Director = strings.TrimSpace(parts[0])
+	if len(parts) > 1 {
+		if year := strings.TrimSpace(parts[1]); filmYearRe.MatchString(year) {
+			meta.Year = year
+		}
+	}
+	return meta
 }
 
 func parseMetrographCalendar(doc *goquery.Document, theater model.Theater, filmURLs map[string]string) []model.Showtime {
@@ -49,7 +89,12 @@ func parseMetrographCalendar(doc *goquery.Document, theater model.Theater, filmU
 			if title == "" {
 				return
 			}
+			// The calendar also lists the occasional non-film booking.
+			if strings.HasPrefix(strings.ToUpper(title), "PRIVATE EVENT") {
+				return
+			}
 			displayTitle := DisplayTitle(title)
+			meta := parseMetrographCardMeta(item)
 			if href, ok := titleLink.Attr("href"); ok {
 				filmURLs[NormalizeTitle(displayTitle)] = AbsoluteURL(href, "https://metrograph.com")
 			}
@@ -62,6 +107,8 @@ func parseMetrographCalendar(doc *goquery.Document, theater model.Theater, filmU
 					TheaterID:   theater.ID,
 					TheaterName: theater.Name,
 					Title:       displayTitle,
+					Director:    meta.Director,
+					Year:        meta.Year,
 					Date:        dateStr,
 					Time:        t,
 				})

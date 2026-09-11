@@ -19,11 +19,18 @@ var metroDirectorRe = regexp.MustCompile(`(?i)^Director:\s*(.+)$`)
 var metroYearRe = regexp.MustCompile(`^(\d{4})\s*/`)
 var roxyYearRe = regexp.MustCompile(`\|\s*((19|20)\d{2})\s*\|`)
 var ffDirectedRe = regexp.MustCompile(`(?i)(?:Written and )?[Dd]irected by\s+([^<\n]+)`)
-var ffCountryYearRe = regexp.MustCompile(`(?i)(?:[A-Z][A-Za-z\.]+(?:\/[A-Z][A-Za-z\.]+)*),\s*((19|20)\d{2})`)
+var ffMetaLineRe = regexp.MustCompile(`(?i)(directed by|\b(?:19|20)\d{2}\b.{0,20}\bmin)`)
+var ffYearRe = regexp.MustCompile(`\b((?:19|20)\d{2})\b`)
 var bamDirectedRe = regexp.MustCompile(`(?i)Directed by\s+([^(\n]+)`)
 var bamYearRe = regexp.MustCompile(`\((\d{4})\)`)
 var afaByRe = regexp.MustCompile(`(?i)^by\s+(.+)$`)
-var afaYearLineRe = regexp.MustCompile(`^((19|20)\d{2}),\s*\d+\s*min`)
+
+// The year is not always at the start of its line, and ranges are written both
+// ways: "In Portuguese with English subtitles, 2000, 171 min", "With Danish
+// intertitles, 1927-28, 98 min", "2024/25, 98 min". Match anywhere as long as
+// it directly precedes the runtime; the film's own metadata line comes before
+// its notes, so the first match (and the range's first year) is the right one.
+var afaYearLineRe = regexp.MustCompile(`(\d{4})(?:[-/]\d{2,4})?,\s*\d+\s*min`)
 
 type FilmMeta struct {
 	Director string
@@ -91,16 +98,33 @@ func ParseRoxyFilmMeta(doc *goquery.Document) FilmMeta {
 }
 
 func ParseFilmForumFilmMeta(doc *goquery.Document) FilmMeta {
-	text := doc.Text()
-	var director, year string
-	if m := ffDirectedRe.FindStringSubmatch(text); m != nil {
-		director = strings.TrimSpace(m[1])
+	var meta FilmMeta
+	// The director credit lives in div.urgent for new releases; repertory
+	// titles carry a bold credit block ("Japan, 1964 / Directed by ..." or
+	// "2025 96 MIN. USA") inside div.copy. Searching the whole page instead
+	// picks up synopsis prose like "written and directed by Sandor Stern,
+	// screenwriter of ..." and long sentences become the director.
+	urgent := strings.TrimSpace(doc.Find("div.urgent").First().Text())
+	if m := ffDirectedRe.FindStringSubmatch(urgent); m != nil {
+		meta.Director = strings.TrimSpace(m[1])
 	}
-	if m := ffCountryYearRe.FindStringSubmatch(text); m != nil {
-		year = m[1]
-	}
+	doc.Find("div.copy strong").EachWithBreak(func(_ int, s *goquery.Selection) bool {
+		text := strings.TrimSpace(s.Text())
+		if !ffMetaLineRe.MatchString(text) {
+			return true
+		}
+		if meta.Director == "" {
+			if m := ffDirectedRe.FindStringSubmatch(text); m != nil {
+				meta.Director = strings.TrimSpace(m[1])
+			}
+		}
+		if m := ffYearRe.FindStringSubmatch(text); m != nil {
+			meta.Year = m[1]
+		}
+		return false
+	})
 	overview := strings.TrimSpace(doc.Find("div.film-description, div#film-description").First().Text())
-	return FilmMeta{Director: director, Year: year, Overview: overview}
+	return FilmMeta{Director: meta.Director, Year: meta.Year, Overview: overview}
 }
 
 func ParseBAMFilmMeta(doc *goquery.Document) FilmMeta {
@@ -126,11 +150,15 @@ func parseAnthologyListMeta(doc *goquery.Document) map[string]FilmMeta {
 		details := strings.TrimSpace(block.Find("div.showing-details").First().Text())
 		var director, year string
 		for _, line := range splitLines(details) {
-			if m := afaByRe.FindStringSubmatch(line); m != nil {
-				director = strings.TrimSpace(m[1])
+			if director == "" {
+				if m := afaByRe.FindStringSubmatch(line); m != nil {
+					director = strings.TrimSpace(m[1])
+				}
 			}
-			if m := afaYearLineRe.FindStringSubmatch(line); m != nil {
-				year = m[1]
+			if year == "" {
+				if m := afaYearLineRe.FindStringSubmatch(line); m != nil {
+					year = m[1]
+				}
 			}
 		}
 		if director == "" && year == "" {

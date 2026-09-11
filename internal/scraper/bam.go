@@ -53,7 +53,7 @@ func (BAMParser) Fetch(ctx context.Context, client *http.Client, theater model.T
 	var out []model.Showtime
 	filmURLs := map[string]string{}
 	for _, ev := range events {
-		if !strings.EqualFold(strings.TrimSpace(ev.Genres), "Film") {
+		if !bamHasGenre(ev.Genres, "Film") {
 			continue
 		}
 		title := DisplayTitle(ev.Name)
@@ -89,4 +89,14 @@ func (BAMParser) Fetch(ctx context.Context, client *http.Client, theater model.T
 	ApplyFilmURLs(out, filmURLs)
 	EnrichFilmMetaFromURLs(ctx, client, out, filmURLs, ParseBAMFilmMeta)
 	return out, nil
+}
+
+// bamHasGenre checks a comma-separated genre label ("Kids,Film") for a genre.
+func bamHasGenre(genres, want string) bool {
+	for _, g := range strings.Split(genres, ",") {
+		if strings.EqualFold(strings.TrimSpace(g), want) {
+			return true
+		}
+	}
+	return false
 }
