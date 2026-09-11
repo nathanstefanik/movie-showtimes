@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"movie-showtimes/internal/letterboxd"
 	"movie-showtimes/internal/model"
@@ -143,6 +144,36 @@ func TestRefreshRequiresAdminToken(t *testing.T) {
 	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/refresh", nil))
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("got %d, want 401", rec.Code)
+	}
+}
+
+func TestBuildPayloadDropsShowtimesFromDeletedTheaters(t *testing.T) {
+	today, _ := scraper.WindowDates()
+	shows := &model.ShowtimeCache{
+		RefreshedAt: time.Now(),
+		Errors:      map[string]string{},
+		Showtimes: []model.Showtime{
+			{TheaterID: "keep", TheaterName: "Keep", Title: "Kept Film", Date: today, Time: "12:00"},
+			{TheaterID: "gone", TheaterName: "Gone", Title: "Orphan Film", Date: today, Time: "13:00"},
+		},
+	}
+	theaters := []model.Theater{{ID: "keep", Name: "Keep", Parser: "keep"}}
+
+	payload := buildPayload(shows, theaters, map[string]model.FilmTMDB{}, tmdb.NewService(), letterboxd.New())
+
+	for _, s := range payload.Showtimes {
+		if s.TheaterID == "gone" {
+			t.Errorf("payload still carries showtime from deleted theater: %+v", s)
+		}
+	}
+	for _, day := range payload.Grid {
+		for _, film := range day.Films {
+			for _, s := range film.Showtimes {
+				if s.TheaterID == "gone" {
+					t.Errorf("grid still carries showtime from deleted theater: %+v", s)
+				}
+			}
+		}
 	}
 }
 

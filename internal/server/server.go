@@ -446,7 +446,9 @@ func buildPayload(shows *model.ShowtimeCache, theaters []model.Theater, tmdbMap 
 	}
 
 	status := make([]model.TheaterStatus, 0, len(theaters))
+	known := make(map[string]struct{}, len(theaters))
 	for _, th := range theaters {
+		known[th.ID] = struct{}{}
 		st := model.TheaterStatus{Theater: th}
 		if th.Parser == "" {
 			st.Status = "no_parser"
@@ -459,6 +461,7 @@ func buildPayload(shows *model.ShowtimeCache, theaters []model.Theater, tmdbMap 
 		status = append(status, st)
 	}
 
+	showtimes = filterKnownTheaters(showtimes, known)
 	grid := buildGrid(showtimes, tmdbMap, lb)
 	return model.APIPayload{
 		RefreshedAt:          refreshed,
@@ -469,6 +472,19 @@ func buildPayload(shows *model.ShowtimeCache, theaters []model.Theater, tmdbMap 
 		LetterboxdConfigured: lb.Configured(),
 		TMDBConfigured:       tmdbSvc.Configured(),
 	}
+}
+
+// filterKnownTheaters drops showtimes left behind by a theater deleted from
+// theaters.json. The next scrape would drop them anyway, but until then they
+// would render with no theater entry to hide or delete them from.
+func filterKnownTheaters(showtimes []model.Showtime, known map[string]struct{}) []model.Showtime {
+	out := make([]model.Showtime, 0, len(showtimes))
+	for _, st := range showtimes {
+		if _, ok := known[st.TheaterID]; ok {
+			out = append(out, st)
+		}
+	}
+	return out
 }
 
 func buildGrid(showtimes []model.Showtime, tmdbMap map[string]model.FilmTMDB, lb *letterboxd.Library) []model.DayGrid {
