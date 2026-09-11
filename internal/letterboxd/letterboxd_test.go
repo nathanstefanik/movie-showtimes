@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 )
 
 func writeLibrary(t *testing.T) *Library {
@@ -66,6 +67,31 @@ func TestStatusIsConcurrencySafe(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+}
+
+func TestRemovingAnExportReloads(t *testing.T) {
+	lb := writeLibrary(t)
+	if got := lb.Status("Stalker"); got != "loved" {
+		t.Fatalf("Status(Stalker) = %q, want loved", got)
+	}
+
+	// Skip the stat throttle so the reload check runs on the next call.
+	lb.mu.Lock()
+	lb.lastStat = time.Time{}
+	lb.mu.Unlock()
+
+	for _, name := range []string{"watched.csv", "ratings.csv"} {
+		if err := os.Remove(filepath.Join(lb.dir, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if got := lb.Status("Stalker"); got != "" {
+		t.Errorf("Status(Stalker) = %q, want empty after its exports were removed", got)
+	}
+	if got := lb.Status("Mirror"); got != "watchlist" {
+		t.Errorf("Status(Mirror) = %q, want watchlist", got)
+	}
 }
 
 func TestMissingExportsAreNotAnError(t *testing.T) {
