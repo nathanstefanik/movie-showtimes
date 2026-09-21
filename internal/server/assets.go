@@ -7,7 +7,6 @@ import (
 	"mime"
 	"net/http"
 	"path"
-	"strconv"
 	"strings"
 )
 
@@ -69,7 +68,6 @@ func (h *assetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	head := w.Header()
-	head.Set("Content-Type", a.contentType)
 	head.Set("ETag", a.etag)
 	// no-cache means "revalidate", not "don't store": the browser still holds
 	// the bytes and a reload costs a 304 instead of the whole file, while a
@@ -80,17 +78,7 @@ func (h *assetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
-	body := a.body
-	if a.gzip != nil && acceptsGzip(r) {
-		head.Set("Content-Encoding", "gzip")
-		body = a.gzip
-	}
-	head.Set("Content-Length", strconv.Itoa(len(body)))
-	if r.Method == http.MethodHead {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-	_, _ = w.Write(body)
+	writeMaybeGzip(w, r, a.contentType, a.body, a.gzip)
 }
 
 func etagMatch(r *http.Request, etag string) bool {

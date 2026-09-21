@@ -153,6 +153,7 @@ func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
 
 func tokenEqual(got, want string) bool {
 	if len(got) != len(want) {
+		// Still compare so a length mismatch isn't a faster 401.
 		subtle.ConstantTimeCompare([]byte(want), []byte(want))
 		return false
 	}

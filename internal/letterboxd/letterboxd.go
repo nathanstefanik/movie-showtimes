@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,7 +37,6 @@ type Library struct {
 	dir      string
 	films    map[string]*record
 	byTitle  map[string][]string
-	loadedAt time.Time
 	lastStat time.Time
 	mtimes   map[string]time.Time
 }
@@ -133,6 +133,7 @@ func (l *Library) lookup(title string) *record {
 	if len(keys) == 1 {
 		return l.films[keys[0]]
 	}
+	// ponytail: no year on the showtime title and several Letterboxd years → skip rather than guess.
 	return nil
 }
 
@@ -222,7 +223,6 @@ func (l *Library) load(files []string) error {
 
 	l.films = films
 	l.byTitle = byTitle
-	l.loadedAt = time.Now()
 	l.mtimes = map[string]time.Time{}
 	for _, name := range files {
 		if info, err := os.Stat(filepath.Join(l.dir, name)); err == nil {
@@ -248,20 +248,11 @@ func mergeRow(films map[string]*record, byTitle map[string][]string, t *table, r
 	if !ok {
 		rec = &record{}
 		films[key] = rec
-		if !contains(byTitle[norm], key) {
+		if !slices.Contains(byTitle[norm], key) {
 			byTitle[norm] = append(byTitle[norm], key)
 		}
 	}
 	apply(rec)
-}
-
-func contains(ss []string, s string) bool {
-	for _, v := range ss {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }
 
 // table keeps rows as the raw slices csv.Reader already allocated and resolves

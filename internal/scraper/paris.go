@@ -29,7 +29,8 @@ const (
 	parisCMSURL   = "https://cms.ntflxthtrs.com/api/films"
 )
 
-// Strapi film entries are embedded in the Next.js homepage payload.
+// ponytail: Next.js embeds Strapi film JSON in the homepage HTML. If they
+// change the payload shape, fall through to the CMS API (parisCMSFilmSlugs).
 var parisFilmSlugRe = regexp.MustCompile(`FilmName\\":\\"([^\\]+)\\".*?Slug\\":\\"([^\\]+)\\".*?VistaIDOverride\\":\\"(HO[0-9]+)\\"`)
 
 type parisLocalizedText struct {
@@ -78,8 +79,8 @@ type parisDayPayload struct {
 
 func (ParisParser) Fetch(ctx context.Context, client *http.Client, theater model.Theater) ([]model.Showtime, error) {
 	var (
-		token  string
-		slugs  map[string]string
+		token   string
+		slugs   map[string]string
 		authErr error
 	)
 	var setup sync.WaitGroup
@@ -112,6 +113,7 @@ func (ParisParser) Fetch(ctx context.Context, client *http.Client, theater model
 			defer wg.Done()
 			dayShows, err := parisShowtimesForDate(ctx, client, token, day, theater, slugs)
 			if err != nil {
+				// ponytail: one day's API blip shouldn't fail the whole theater.
 				return
 			}
 			mu.Lock()

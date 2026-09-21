@@ -59,7 +59,7 @@ func parseRoxyCards(doc *goquery.Document, theater model.Theater, filmURLs map[s
 					out = append(out, model.Showtime{
 						TheaterID:   theater.ID,
 						TheaterName: theater.Name,
-						Title:       DisplayTitle(title),
+						Title:       displayTitle,
 						Date:        dateStr,
 						Time:        t.Format("15:04"),
 					})

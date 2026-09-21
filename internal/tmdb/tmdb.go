@@ -15,12 +15,14 @@ import (
 	"movie-showtimes/internal/scraper"
 )
 
-const posterBase = "https://image.tmdb.org/t/p/w185"
-const maxSearchResults = 5
+const (
+	posterBase       = "https://image.tmdb.org/t/p/w185"
+	maxSearchResults = 5
+)
 
 type Service struct {
 	APIKey string
-	mu     sync.Mutex
+	mu     sync.Mutex // serializes RefreshForShows (cache read/write)
 
 	// lookupMu guards the memoized view of tmdb.json. Without it every
 	// /api/showtimes request re-read and re-parsed the whole cache file.
@@ -57,6 +59,7 @@ func (s *Service) RefreshForShows(shows []model.Showtime) error {
 			continue
 		}
 		entry := tc.Entries[key]
+		// Overview-only rows predate director/year in the cache; refresh them once.
 		legacyEntry := entry.Overview != "" && entry.Director == "" && entry.ReleaseYear == ""
 		if entryHasMetadata(entry) && !entry.FetchedAt.IsZero() && now.Sub(entry.FetchedAt) < 7*24*time.Hour && !legacyEntry && !shouldRefreshTMDB(entry, film) {
 			continue
@@ -127,14 +130,6 @@ func mergeTMDBEntry(entry model.TMDBEntry, meta *movieMeta, fetchedAt time.Time)
 		entry.ReleaseYear = meta.ReleaseYear
 	}
 	return entry
-}
-
-func FilmTMDBForTitle(meta map[string]model.FilmTMDB, title string) model.FilmTMDB {
-	key := scraper.NormalizeTitle(title)
-	if m, ok := meta[key]; ok {
-		return m
-	}
-	return model.FilmTMDB{}
 }
 
 type movieMeta struct {

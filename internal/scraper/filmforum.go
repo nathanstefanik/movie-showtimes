@@ -132,6 +132,8 @@ func parseFilmForumShowtimes(doc *goquery.Document, theater model.Theater, filmU
 	return out
 }
 
+// ponytail: Film Forum often omits am/pm. 1-9 → PM, 10-12 → AM, matching
+// their evening-heavy calendar. A 9am screening would be stored as 21:00.
 func normalizeFilmForumTime(raw string) string {
 	s := strings.TrimSpace(raw)
 	if m := timeRe.FindStringSubmatch(s); m != nil {
