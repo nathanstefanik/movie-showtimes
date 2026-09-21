@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"testing"
+	"time"
 
 	"movie-showtimes/internal/model"
 )
@@ -15,6 +16,9 @@ func TestParseParisFilmSlugs(t *testing.T) {
 }
 
 func TestParseParisDay(t *testing.T) {
+	// InWindow uses today; a hardcoded date ages out of the 14-day window.
+	day := time.Now().In(NYC()).AddDate(0, 0, 1)
+	startsAt := time.Date(day.Year(), day.Month(), day.Day(), 11, 0, 0, 0, NYC())
 	payload := parisDayPayload{
 		Showtimes: []parisShowtime{{
 			ID:     "2001-2934",
@@ -23,7 +27,7 @@ func TestParseParisDay(t *testing.T) {
 				BusinessDate string `json:"businessDate"`
 				StartsAt     string `json:"startsAt"`
 			}{
-				StartsAt: "2026-09-12T11:00:00-04:00",
+				StartsAt: startsAt.Format(time.RFC3339),
 			},
 		}},
 	}
@@ -52,7 +56,7 @@ func TestParseParisDay(t *testing.T) {
 		Year:        "1962",
 		Overview:    "Epic.",
 		FilmURL:     "https://www.paristheaternyc.com/film/lawrence-of-arabia-paris",
-		Date:        "2026-09-12",
+		Date:        startsAt.Format("2006-01-02"),
 		Time:        "11:00",
 	}
 	if got[0] != want {

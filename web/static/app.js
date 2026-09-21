@@ -625,7 +625,6 @@ window.addEventListener('keydown', (e) => {
 
 window.addEventListener('popstate', () => {
   applyUrlState();
-  invalidateGridCache();
   renderTheaters(theaterStatus);
   renderSchedule();
 });

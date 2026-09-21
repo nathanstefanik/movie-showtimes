@@ -97,10 +97,6 @@ body {
   max-width: 100%;
 }
 
-.card--theaters--expanded {
-  margin-bottom: 40px;
-}
-
 .card--theaters:not(.card--theaters--expanded) {
   margin-bottom: 20px;
 }
@@ -189,18 +185,11 @@ body {
 
 a {
   color: LinkText;
+  text-decoration: none;
 }
 
 a:visited {
   color: VisitedText;
-}
-
-.btn {
-  color: inherit;
-}
-
-a {
-  text-decoration: none;
 }
 
 a:hover {
@@ -208,6 +197,7 @@ a:hover {
 }
 
 .btn {
+  color: inherit;
   padding: 0;
   border: none;
   background: none;
@@ -530,10 +520,6 @@ a:hover {
 
   .card--theaters {
     width: 100%;
-  }
-
-  .card--theaters--expanded {
-    margin-bottom: 28px;
   }
 
   .card--theaters:not(.card--theaters--expanded) {

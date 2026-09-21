@@ -1,11 +1,11 @@
 # --- Secrets -----------------------------------------------------------
-# ADMIN_TOKEN / TMDB_API_KEY / OMDB_API_KEY live here. Never commit this.
+# ADMIN_TOKEN / TMDB_API_KEY live here. Never commit this.
 .env
 .env.*
 !.env.example
 
 # --- Personal / local-only --------------------------------------------
-# Homelab deploy script (hostnames, SSH, Proxmox). Not part of the app.
+# Homelab deploy script (hostnames, SSH). Not part of the app.
 deploy.sh
 
 # --- Personal data --------------------------------------------------------
@@ -14,7 +14,7 @@ deploy.sh
 data/movies/*.csv
 
 # --- Generated caches -------------------------------------------------
-# Rebuilt by the app at runtime (scraper output, TMDB lookups, legacy IMDb
+# Rebuilt by the app at runtime (scraper output, TMDB lookups, leftover IMDb
 # cache); committing them just churns the diff and can leak scrape history.
 data/showtimes.json
 data/tmdb.json

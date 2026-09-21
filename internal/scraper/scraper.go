@@ -75,8 +75,8 @@ func FetchAll(ctx context.Context, client *http.Client, theaters []model.Theater
 	)
 
 	for _, th := range theaters {
-		th := th
 		wg.Add(1)
+		// Go 1.22+: `th` is per-iteration, safe to capture in the goroutine.
 		go func() {
 			defer wg.Done()
 			ctxT, cancel := context.WithTimeout(ctx, TheaterFetchTimeout)
@@ -117,6 +117,7 @@ var nyLoc *time.Location
 func init() {
 	loc, err := time.LoadLocation("America/New_York")
 	if err != nil {
+		// ponytail: missing tzdata → fixed EST, no DST. Bundle zoneinfo if a host ever ships without it.
 		loc = time.FixedZone("EST", -5*3600)
 	}
 	nyLoc = loc
@@ -133,7 +134,7 @@ func DefaultClient() *http.Client {
 func Window() (time.Time, time.Time) {
 	now := time.Now().In(nyLoc)
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, nyLoc)
-	end := start.AddDate(0, 0, 13)
+	end := start.AddDate(0, 0, 13) // today + 13 days = two week-grid pages
 	return start, end
 }
 
@@ -264,9 +265,8 @@ func LookupTitle(title string) string {
 	return strings.TrimSpace(t)
 }
 
-// Scraped titles repeat heavily (one film, many showtimes) and every lookup
-// costs five regex passes, so memoize. The cache is cleared rather than grown
-// without bound in the unlikely event a scraper starts emitting unique titles.
+// ponytail: global map, wiped at 4096 instead of an LRU. Fine at repertory
+// calendar scale; swap for an LRU if unique titles grow without bound.
 const maxTitleCacheEntries = 4096
 
 var (

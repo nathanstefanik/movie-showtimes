@@ -47,6 +47,7 @@ type FilmTMDB struct {
 	ReleaseYear string `json:"release_year,omitempty"`
 }
 
+// TMDBEntry is FilmTMDB plus FetchedAt, the on-disk cache row.
 type TMDBEntry struct {
 	PosterURL   string    `json:"poster_url,omitempty"`
 	Overview    string    `json:"overview,omitempty"`

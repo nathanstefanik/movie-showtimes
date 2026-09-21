@@ -13,3 +13,7 @@ Recognized filenames (from `internal/letterboxd/letterboxd.go`), all optional:
 Any missing file is treated as "no data" rather than an error. Set
 `LETTERBOXD_DATA_DIR` in `.env` to point elsewhere instead of using this
 directory.
+
+Title colors in the grid: watchlist = blue, watched = grey, 4★+ = green,
+2★ or less = red. A film that is only in `ratings.csv` with a blank rating
+is ignored.

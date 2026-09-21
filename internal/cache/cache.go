@@ -9,8 +9,10 @@ import (
 	"movie-showtimes/internal/model"
 )
 
-const showtimesFile = "data/showtimes.json"
-const tmdbFile = "data/tmdb.json"
+const (
+	showtimesFile = "data/showtimes.json"
+	tmdbFile      = "data/tmdb.json"
+)
 
 func LoadShowtimes() (*model.ShowtimeCache, error) {
 	data, err := os.ReadFile(showtimesFile)
